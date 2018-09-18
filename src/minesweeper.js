@@ -61,7 +61,7 @@ const getNumberOfNeighborBombs = (bombBoard, rowIndex, columnIndex) => {
         let neighborColumnIndex = offset[1] + columnIndex;
 
         //check to see if neighbor square is a valid square and not outside the parameters of the bombBoard
-        if(neighborRowIndex > 0 && neighborRowIndex < numberOfRows && neighborColumnIndex > 0 && neighborColumnIndex < numberOfColumns) {
+        if(neighborRowIndex >= 0 && neighborRowIndex < numberOfRows && neighborColumnIndex >= 0 && neighborColumnIndex < numberOfColumns) {
             if(bombBoard[neighborRowIndex][neighborColumnIndex] == 'B') {
                 numberOfBombs++;
             }
@@ -95,7 +95,7 @@ console.log('Bomb Board: ');
 printBoard(bombBoard);
 
 console.log('Updated Player Board: ');
-flipTile(playerBoard, bombBoard, 0, 0)
+flipTile(playerBoard, bombBoard, 1, 1)
 printBoard(playerBoard);
 
 //whiteboard code that does the same as getNumberOfNeighborBombs
