@@ -1,122 +1,134 @@
-//function to generate a blnk board of a given size to hold the player's guesses
-const generatePlayerBoard = (numberOfRows, numberOfColumns) => {
-    let board = [];
-    for(let i = 0; i < numberOfRows; i++) {
-        let row = [];
-        for(let j = 0; j< numberOfColumns; j++) {
-          row.push(' ');  
-        }
-        board.push(row);
+//Building a js class for the game play of Minesweeper
+class Game {
+    constructor(numberOfRows, numberOfColumns, numberOfBombs) {
+        this._board = new Board(numberOfRows, numberOfColumns, numberOfBombs);
     }
 
-    return board;
-};
-
-//create a bomb board to check player answers against
-
-const generateBombBoard = (numberOfRows, numberOfColumns, numberOfBombs) => {
-    let board = [];
-    for(let i = 0; i < numberOfRows; i++) {
-        let row = [];
-        for(let j = 0; j< numberOfColumns; j++) {
-          row.push(null);  
+    playMove(rowIndex, columnIndex) {
+        this._board.flipTile(rowIndex, columnIndex);
+        if(this._board.playerBoard[rowIndex][columnIndex] === 'B') {
+            console.log("Game over!  You lose!");
+            this._board.print();
+        } else if (!this._board.hasSafeTiles()) {
+            console.log("You win!  Awesome!");
+        } else {
+            console.log("Current Board:");
+            this._board.print();
         }
-        board.push(row);
+    }
+}
+
+
+
+//Building a js class for a game board
+class Board {
+    constructor(numberOfRows, numberOfColumns, numberOfBombs) {
+        this._numberOfBombs = numberOfBombs;
+        this._numberOfRows = numberOfRows;
+        this._numberOfColumns = numberOfColumns;
+        this._numberOfTiles = numberOfRows * numberOfColumns;
+        this._playerBoard = Board.generatePlayerBoard(numberOfRows, numberOfColumns);
+        this._bombBoard = Board.generateBombBoard(numberOfRows, numberOfColumns, numberOfBombs);
+    }
+    
+    get playerBoard() {
+        return this._playerBoard;
     }
 
-    let numberOfBombsPlaced = 0;
-    while(numberOfBombsPlaced < numberOfBombs){
-        let bombRow = Math.floor(Math.random() * numberOfRows);
-        let bombColumn = Math.floor(Math.random() * numberOfColumns);
-        if(board[bombRow][bombColumn] !== 'B') {
-            board[bombRow][bombColumn] = 'B';
-            numberOfBombsPlaced++;
+    //allows a player to flip a tile, which means they will know the number of adjacent bombs to that tile AND they won't be able to choose the tile again
+    flipTile(rowIndex, columnIndex) {
+        if(this._playerBoard[rowIndex][columnIndex] !== ' ') {
+            console.log('This tile has already been flipped!');
+            return;
+        } else if (this._bombBoard[rowIndex][columnIndex] == 'B') {
+            this._playerBoard[rowIndex][columnIndex] = 'B';
+        } else {
+            this._playerBoard[rowIndex][columnIndex] = this.getNumberOfNeighborBombs(rowIndex, columnIndex);
         }
-    };
 
-    return board;
-};
+        this._numberOfTiles--
+    }
 
-//print and format the game boards
-const printBoard = (board) => {
-    console.log(board.map(row => row.join(' | ')).join('\n'));
-};
+    //calculate number of adjacent bombs in a single square
+    getNumberOfNeighborBombs(rowIndex, columnIndex) {
+        let neighborOffsets = [
+            [-1, -1], [0, -1], [1, -1],
+            [-1, 0], [1, 0],
+            [-1, 1], [0, 1], [1, 1]
+        ];
 
+        const numberOfRows = this._bombBoard.length;
+        const numberOfColumns = this._bombBoard[0].length;
 
-//calculate number of adjacent bombs in a single square
-const getNumberOfNeighborBombs = (bombBoard, rowIndex, columnIndex) => {
-    let neighborOffsets = [
-        [-1, -1], [0, -1], [1, -1],
-        [-1, 0], [1, 0],
-        [-1, 1], [0, 1], [1, 1]
-    ];
+        let numberOfBombs = 0;
 
-    const numberOfRows = bombBoard.length;
-    const numberOfColumns = bombBoard[0].length;
+        neighborOffsets.forEach(offset => {
+            let neighborRowIndex = offset[0] + rowIndex;
+            let neighborColumnIndex = offset[1] + columnIndex;
 
-    let numberOfBombs = 0;
-
-    neighborOffsets.forEach(offset => {
-        let neighborRowIndex = offset[0] + rowIndex;
-        let neighborColumnIndex = offset[1] + columnIndex;
-
-        //check to see if neighbor square is a valid square and not outside the parameters of the bombBoard
-        if(neighborRowIndex >= 0 && neighborRowIndex < numberOfRows && neighborColumnIndex >= 0 && neighborColumnIndex < numberOfColumns) {
-            if(bombBoard[neighborRowIndex][neighborColumnIndex] == 'B') {
-                numberOfBombs++;
+            //check to see if neighbor square is a valid square and not outside the parameters of the bombBoard
+            if(neighborRowIndex >= 0 && neighborRowIndex < numberOfRows && neighborColumnIndex >= 0 && neighborColumnIndex < numberOfColumns) {
+                if(this._bombBoard[neighborRowIndex][neighborColumnIndex] == 'B') {
+                    numberOfBombs++;
+                }
             }
-        }
-    });
+        });
 
-    return numberOfBombs;
-};
-
-//allows a player to flip a tile, which means they will know the number of adjacent bombs to that tile AND they won't be able to choose the tile again
-const flipTile = (playerBoard, bombBoard, rowIndex, columnIndex) => {
-    if(playerBoard[rowIndex][columnIndex] !== ' ') {
-        console.log('This tile has already been flipped!');
-        return;
-    } else if (bombBoard[rowIndex][columnIndex] == 'B') {
-        playerBoard[rowIndex][columnIndex] = 'B';
-    } else {
-        playerBoard[rowIndex][columnIndex] = getNumberOfNeighborBombs(bombBoard, rowIndex, columnIndex);
+        return numberOfBombs;
     }
-};
+
+    //checks if there are safe tiles (ie. non-bomb tiles) remaining to be selected
+    hasSafeTiles() {
+        return this._numberOfTiles !== this._numberOfBombs;
+    }
+
+    //print and format the game boards
+    print() {
+        console.log(this._playerBoard.map(row => row.join(' | ')).join('\n'));
+    }
+
+    //function to generate a blnk board of a given size to hold the player's guesses
+    static generatePlayerBoard(numberOfRows, numberOfColumns) {
+        let board = [];
+        for(let i = 0; i < numberOfRows; i++) {
+            let row = [];
+            for(let j = 0; j< numberOfColumns; j++) {
+            row.push(' ');  
+            }
+            board.push(row);
+        }
+
+        return board;
+    }
+
+    //create a bomb board to check player answers against
+
+    static generateBombBoard(numberOfRows, numberOfColumns, numberOfBombs) {
+        let board = [];
+        for(let i = 0; i < numberOfRows; i++) {
+            let row = [];
+            for(let j = 0; j< numberOfColumns; j++) {
+            row.push(null);  
+            }
+            board.push(row);
+        }
+
+        let numberOfBombsPlaced = 0;
+        while(numberOfBombsPlaced < numberOfBombs){
+            let bombRow = Math.floor(Math.random() * numberOfRows);
+            let bombColumn = Math.floor(Math.random() * numberOfColumns);
+            if(board[bombRow][bombColumn] !== 'B') {
+                board[bombRow][bombColumn] = 'B';
+                numberOfBombsPlaced++;
+            }
+        };
+
+        return board;
+    }
+
+}
 
 
 //a single turn
-let playerBoard = generatePlayerBoard(3, 3);
-let bombBoard = generateBombBoard(3, 3, 3);
-
-console.log('Player Board: ');
-printBoard(playerBoard);
-
-console.log('Bomb Board: ');
-printBoard(bombBoard);
-
-console.log('Updated Player Board: ');
-flipTile(playerBoard, bombBoard, 1, 1)
-printBoard(playerBoard);
-
-//whiteboard code that does the same as getNumberOfNeighborBombs
-
-/*
-const calculateAdjBombs = (bombBoard, playerRow, playerColumn) => {
-    let adjacentBombs = 0;
-    for(let i = playerRow - 1; i < playerRow + 1; i++) {
-        for(let j = playerColumn -1; j < playerColumn + 1; j++) {
-            if(bombBoard[i][j] == 'B') {
-                adjacentBombs++;
-            }
-        };
-    }
-
-    return adjacentBombs;
-};
-
-let bombBoard = generateBombBoard(5, 5, 1);
-
-console.log('Bomb board: ');
-printBoard(bombBoard);
-console.log(calculateAdjBombs(bombBoard, 1, 1));
- */
+const g = new Game(3, 3, 3);
+g.playMove(0, 0);
